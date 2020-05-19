@@ -1,30 +1,50 @@
-- name: install texlive packages
-  apt:
-    pkg:
-      - texlive
-      - texlive-luatex
-      - texlive-lang-french
-      - texlive-latex-extra
-      - texlive-fonts-extra
-      - python-pygments
-      - xzdec
-      - wget
-    cache_valid_time: 3600
+- name: download latest texlive
+  become: true
+  become_user: zds
+  unarchive:
+    src: http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+    dest: "{{ workdir }}"
+    remote_src: yes
+  tags:
+    - bootstrap
+
+- name: copy texlive.profile
+  become: true
+  become_user: zds
+  template:
+    src: texlive.profile
+    dest: "{{ workdir }}/texlive.profile"
+  tags:
+    - bootstrap
+
+- name: install latest texlive
+  become: true
+  become_user: zds
+  shell: |
+    if [ -d "{{ texlive_dir }}/bin" ]; then
+        echo "TeXLive is already installed"
+    else
+        ./install-tl*/install-tl -v -profile texlive.profile
+    fi
+  args:
+    executable: /bin/bash
+    chdir: "{{ workdir }}"
+  notify: remove texlive installation files
   tags:
     - bootstrap
 
 - include_tasks: packages.yml
   tags:
     - bootstrap
+    - upgrade
 
-- name: clone the template
-  git:
-    repo: "https://github.com/zestedesavoir/latex-template/"
-    dest: /opt/zds/texmf/tex/generic/latex-template
-  notify: run texhash
+- name: install fontconfig
+  apt:
+    pkg: fontconfig
+    state: present
+    cache_valid_time: 3600
   tags:
     - bootstrap
-    - upgrade
 
 - name: create font folders
   file:
@@ -55,6 +75,6 @@
       - Regular
       - Semibold
       - SemiboldIt
+  notify: refresh font-config cache
   tags:
     - bootstrap
-  notify: refresh font-config cache

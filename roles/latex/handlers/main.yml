@@ -1,7 +1,15 @@
 - name: run texhash
   become: true
   become_user: zds
-  shell: texhash $HOME/texmf
+  shell: "{{ texlive_binaries }}/texhash $HOME/texmf"
 
 - name: refresh font-config cache
   shell: fc-cache -f
+
+- name: remove texlive installation files
+  shell: |
+    rm -rf ./install-tl-*/
+    rm ./texlive.profile
+  args:
+    executable: /bin/bash
+    chdir: "{{ workdir }}"
