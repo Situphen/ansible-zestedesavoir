@@ -16,4 +16,4 @@ install:
 
 script:
   # run kitchen tests (destroy, create, converge, setup, verify and destroy)
-  - travis_wait 30 kitchen test
+  - travis_wait 40 kitchen test
