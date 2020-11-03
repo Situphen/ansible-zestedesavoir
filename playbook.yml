@@ -9,6 +9,8 @@
       tags: bootstrap
     - role: web
       tags: bootstrap
+    - role: nodejs
+      tags: bootstrap
     - app
     - latex
     - zmd

@@ -1,4 +1,3 @@
-# [PM2] Spawning PM2 daemon with pm2_home=/home/zds/.pm2
 [Unit]
 Description=zmd server
 Documentation=https://pm2.keymetrics.io/
@@ -6,7 +5,7 @@ After=network.target
 
 [Service]
 Type=forking
-User=zds
+User={{ appuser }}
 LimitNOFILE=infinity
 LimitNPROC=infinity
 LimitCORE=infinity

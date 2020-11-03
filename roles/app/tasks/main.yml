@@ -1,5 +1,4 @@
 - name: install app dependencies
-  become: true
   apt:
     pkg:
       - python3
@@ -15,10 +14,9 @@
   tags:
     - bootstrap
 
-- name: should have a {{ appuser }} user
-  become: true
+- name: should have a {{ appuser }} user
   user:
-    name: "{{ appuser }}"
+    name: "{{ appuser }}"
     shell: /bin/false
     home: "{{ workdir }}"
     comment: "Zeste de Savoir"
@@ -26,12 +24,11 @@
     - bootstrap
 
 - name: create the needed directories
-  become: true
   file:
     path: "{{ item }}"
     state: directory
-    owner: "{{ appuser }}"
-    group: "{{ appuser }}"
+    owner: "{{ appuser }}"
+    group: "{{ appuser }}"
   with_items:
     - "{{ logdir }}"
     - "{{ workdir }}"
@@ -46,7 +43,6 @@
     - bootstrap
 
 - name: checkout the application
-  become: true
   become_user: "{{ appuser }}"
   vars:
     refspec: "{{ '+refs/pull/*:refs/pull/*' if 'pull/' in appversion else '+refs/heads/*:refs/remotes/origin/*' }}"
@@ -64,8 +60,7 @@
     - upgrade
 
 - name: symlink data folders
-  become: true
-  become_user: "{{ appuser }}"
+  become_user: "{{ appuser }}"
   file:
     src: "{{ datadir }}/{{ item }}"
     dest: "{{ appdir }}/{{ item }}"
@@ -79,8 +74,7 @@
     - bootstrap
 
 - name: install wheel and sqlparse in virtualenv
-  become: true
-  become_user: "{{ appuser }}"
+  become_user: "{{ appuser }}"
   pip:
     name:
       - wheel
@@ -91,19 +85,16 @@
     - bootstrap
 
 - name: install requirements in virtualenv
-  become: true
-  become_user: "{{ appuser }}"
+  become_user: "{{ appuser }}"
   pip:
     requirements: "{{ appdir }}/requirements-prod.txt"
     virtualenv: "{{ virtualenv }}"
     virtualenv_command: /usr/bin/python3 -m venv
-  when: app.changed
   tags:
     - bootstrap
     - upgrade
 
 - name: save version file
-  become: true
   become_user: "{{ appuser }}"
   template:
     src: templates/_version.py.j2
@@ -114,8 +105,7 @@
     - upgrade
 
 - name: save wrapper script
-  become: true
-  become_user: "{{ appuser }}"
+  become_user: "{{ appuser }}"
   template:
     src: templates/wrapper.j2
     dest: "{{ workdir }}/wrapper"
@@ -137,7 +127,6 @@
     - bootstrap
 
 - name: create app config file
-  become: true
   become_user: "{{ appuser }}"
   template:
     src: templates/config.toml.j2
@@ -150,7 +139,6 @@
     - upgrade
 
 - name: create Google Analytics API secrets file
-  become: true
   become_user: "{{ appuser }}"
   copy:
     content: "{{ google_analytics_api | combine(secrets.google_analytics_api) | to_nice_json }}"
@@ -160,15 +148,24 @@
     - bootstrap
     - upgrade
 
-- name: build front if repo changed
-  include_tasks: frontend.yml
-  when: app.changed
+- name: install frontend
+  become_user: "{{ appuser }}"
+  npm:
+    path: "{{ appdir }}"
+  tags:
+    - bootstrap
+    - upgrade
+
+- name: build frontend
+  become_user: "{{ appuser }}"
+  command: npm run build
+  args:
+    chdir: "{{ appdir }}"
   tags:
     - bootstrap
     - upgrade
 
 - name: collect static files
-  become: true
   become_user: "{{ appuser }}"
   environment:
     DJANGO_SETTINGS_MODULE: "zds.settings.{{ env }}"
@@ -177,7 +174,6 @@
     app_path: "{{ appdir }}"
     virtualenv: "{{ virtualenv }}"
     command: collectstatic
-  when: app.changed
   tags:
     - bootstrap
     - upgrade
@@ -211,13 +207,11 @@
     src: "{{ webroot }}/errors/maintenance.html"
     dest: "{{ webroot }}/maintenance.html"
     state: link
-  when: app.changed
   notify: remove maintenance symlink
   tags:
     - upgrade
 
 - name: migrate database
-  become: true
   become_user: "{{ appuser }}"
   environment:
     DJANGO_SETTINGS_MODULE: "zds.settings.{{ env }}"
@@ -226,7 +220,6 @@
     app_path: "{{ appdir }}"
     virtualenv: "{{ virtualenv }}"
     command: migrate
-  when: app.changed
   tags:
     - bootstrap
     - upgrade

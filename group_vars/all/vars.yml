@@ -1,3 +1,4 @@
+appuser: zds
 workdir: /opt/zds
 rundir: "{{ workdir }}/run"
 appdir: "{{ workdir }}/app"
